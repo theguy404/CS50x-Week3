@@ -33,6 +33,7 @@ void add_pairs(void);
 void sort_pairs(void);
 void lock_pairs(void);
 void print_winner(void);
+bool cycle(int position, int start);
 
 int main(int argc, string argv[])
 {
@@ -103,17 +104,17 @@ bool vote(int rank, string name, int ranks[])
     int nameLen = strlen(name);
     
     // loop through all the candidates
-    for(int i = 0; i < candidate_count; i++)
+    for (int i = 0; i < candidate_count; i++)
     {
         int candLen = strlen(candidates[i]);
         
         // check to see if the current candidate matchs the name length given
-        if(nameLen == candLen) {
+        if (nameLen == candLen) {
             
             // checks to see if the name matchs the name given
-            for(int j = 0; j < candLen; j++)
+            for (int j = 0; j < candLen; j++)
             {
-                if(candidates[i][j] != name[j])
+                if (candidates[i][j] != name[j])
                 {
                     return false;
                 }
@@ -131,10 +132,10 @@ bool vote(int rank, string name, int ranks[])
 void record_preferences(int ranks[])
 {
     // loops through the ranks one candidate at a time
-    for(int i = 0; i < candidate_count - 1; i++) 
+    for (int i = 0; i < candidate_count - 1; i++) 
     {
         // loops through all the ranks below the current canadidate and adds 1
-        for(int j = i + 1; j < candidate_count; j++)
+        for (int j = i + 1; j < candidate_count; j++)
         {
             preferences[ranks[i]][ranks[j]]++;
         }
@@ -146,31 +147,33 @@ void record_preferences(int ranks[])
 void add_pairs(void)
 {
     // loop through the rows of preferences
-    for(int i = 0; i < candidate_count; i++)
+    for (int i = 0; i < candidate_count; i++)
     {
         // loops through the collums of preferences and matches the number of
         // wins for each candidates in each pair and passes wins to pairs array
-        for(int j = i + 1; j < candidate_count; j++)
+        for (int j = i + 1; j < candidate_count; j++)
         {
             int count1 = preferences[i][j];
             int count2 = preferences[j][i];
             
             pair counts;
             
-            if(count1 > count2)
+            if (count1 > count2)
             {
                 counts.winner = i;
                 counts.loser = j;
+                
+                pairs[pair_count] = counts;
+                pair_count++;
             }
-            else if(count2 > count1)
+            else if (count2 > count1)
             {
                 counts.winner = j;
                 counts.loser = i;
+                
+                pairs[pair_count] = counts;
+                pair_count++;
             }
-            
-            pairs[pair_count] = counts;
-            
-            pair_count++;
         }
     }
     return;
@@ -180,38 +183,46 @@ void add_pairs(void)
 void sort_pairs(void)
 {
     // temperary variables
-    int highestValue = 0;
-    int highestIndex = 0;
-    int correctedIndex = -1;
-    pair tempValue;
+    pair swap;
+    int lastvalue = 0;
+    int corrections = 1;
     
-    // loop through the array and find the highest value
-    // returns highest value to the lowest index and then repeats till
-    // all are "corrected"
-    while(correctedIndex < pair_count)
+    // continue loop until no corrections need to be made
+    while (corrections > 0)
     {
-        for(int i = correctedIndex +1; i < pair_count; i++)
+        corrections = 0;
+        
+        // loop through the array
+        for (int i = 0; i < pair_count; i++)
         {
+            // subtract winners value from losers value to get the difference
             pair currentTestPair = pairs[i];
             int winnerValue = preferences[currentTestPair.winner][currentTestPair.loser];
             int loserValue = preferences[currentTestPair.loser][currentTestPair.winner];
             int testvalue = winnerValue - loserValue;
             
-            if(testvalue > highestValue)
+            // if this is the first value in the array then record its value and continue
+            if (i == 0)
             {
-                highestValue = testvalue;
-                highestIndex = i;
+                lastvalue = testvalue;
+            }
+            else
+            {
+                // if this value is greater then the last value then swap them
+                if (testvalue > lastvalue)
+                {
+                swap = pairs[i - 1];
+                pairs[i - 1] = pairs[i];
+                pairs[i] = swap;
+                
+                corrections++;
+                }
+                else
+                {
+                    lastvalue = testvalue;
+                }
             }
         }
-        // add highest value to corrected section of the array
-        tempValue = pairs[correctedIndex + 1];
-        pairs[correctedIndex + 1] = pairs[highestIndex];
-        pairs[highestIndex] = tempValue;
-        
-        // increase the corrected index value and resets the highest values
-        correctedIndex++;
-        highestValue = 0;
-        highestIndex = 0;
     }
     
     return;
@@ -220,42 +231,36 @@ void sort_pairs(void)
 // Lock pairs into the candidate graph in order, without creating cycles
 void lock_pairs(void)
 {
-    int winners[pair_count];
-    int winCount = 0;
-    bool record = true;
-    
-    // loop through sorted pairs
-    for(int i = 0; i < pair_count; i++)
+    for (int i = 0; i < pair_count; i++)
     {
-        // checks the winners array to see if the loser has previously won
-        if(winCount)
+        if (!cycle(pairs[i].winner, pairs[i].loser))
         {
-            for(int j = 0; j < winCount; j++)
-            {
-                // if they have won against someone else then this would create a cycle
-                // and pair is thrown out
-                if(winners[j] == pairs[i].loser)
-                {
-                    record = false;
-                }
-            }
-        }
-        
-        // if no cycle then mark the winner and loser in locked array
-        if(record)
-        {
-            winners[winCount] = pairs[i].winner;
             locked[pairs[i].winner][pairs[i].loser] = true;
-            locked[pairs[i].loser][pairs[i].winner] = false;
-            winCount++;
         }
         else 
         {
             locked[pairs[i].winner][pairs[i].loser] = false;
-            locked[pairs[i].loser][pairs[i].winner] = false;
         }
     }
     return;
+}
+
+bool cycle(int winner, int loser)
+{
+    // checks if the loser has previously beat the winner
+    if (locked[loser][winner])
+    {
+        return true;
+    }
+    
+    //checks if the loser has won previously
+    for (int i = 0; i < candidate_count; i++)
+    {
+        if (locked[loser][i] && i != winner)
+        {
+            cycle(winner, i);
+        }
+    }
 }
 
 // Print the winner of the election
@@ -265,16 +270,16 @@ void print_winner(void)
     bool loseFound = false;
     
     // loop over all candidates and search for one with no loses
-    for(int i = 0; i < pair_count; i++)
+    for (int i = 0; i < pair_count; i++)
     {
-        for(int j = 0; j < pair_count; j++)
+        for (int j = 0; j < pair_count; j++)
         {
-            if(locked[i][j] == true)
+            if (locked[i][j] == true)
             {
                 loseFound = true;
             }
         }
-        if(loseFound == false)
+        if (loseFound == false)
         {
             winner = i;
         }
@@ -283,4 +288,3 @@ void print_winner(void)
     printf("%s\n", candidates[winner]);
     return;
 }
-

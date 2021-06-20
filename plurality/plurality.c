@@ -67,20 +67,20 @@ int main(int argc, string argv[])
 bool vote(string name)
 {
     // loops through all the candidates
-    for(int i = 0; i < candidate_count; i++)
+    for (int i = 0; i < candidate_count; i++)
     {
         int canlen = strlen(candidates[i].name);
         int namelen = strlen(name);
         
         // checks to see if the current candidate name has the same length as vote
-        if(canlen == namelen)
+        if (canlen == namelen)
         {
             bool nameFound = true;
             
             // checks the name to make sure its a perfect match to the one given
-            for(int j = 0; j < canlen; j++)
+            for (int j = 0; j < canlen; j++)
             {
-                if(candidates[i].name[j] != name[j])
+                if (candidates[i].name[j] != name[j])
                 {
                     nameFound = false;
                 }
@@ -88,7 +88,7 @@ bool vote(string name)
             
             // if the name matches up perfectly then a vote is added to their count
             // then the function returns true
-            if(nameFound)
+            if (nameFound)
             {
                 candidates[i].votes++;
                 return true;
@@ -104,9 +104,9 @@ void print_winner(void)
     int highestVote = 0;
     
     // loops through the candidates and finds the highest vote count
-    for(int i = 0; i < candidate_count; i++)
+    for (int i = 0; i < candidate_count; i++)
     {
-        if(candidates[i].votes > highestVote)
+        if (candidates[i].votes > highestVote)
         {
             highestVote = candidates[i].votes;
         }
@@ -114,13 +114,13 @@ void print_winner(void)
     
     // loops through the candidates again and returns all candidates with
     // the same vote count equal to the highest vote count found
-    for(int i = 0; i < candidate_count; i++)
+    for (int i = 0; i < candidate_count; i++)
     {
-        if(candidates[i].votes == highestVote)
+        if (candidates[i].votes == highestVote)
         {
             int namelen = strlen(candidates[i].name);
             
-            for(int j = 0; j < namelen; j++)
+            for (int j = 0; j < namelen; j++)
             {
                 printf("%c", candidates[i].name[j]);
             }
